@@ -10,15 +10,31 @@ export async function POST(request) {
     });
 
     try {
-        const { messages, tenders } = await request.json();
-        const userMessage = messages[messages.length - 1].content.toLowerCase();
+        const body = await request.json();
+        const { tenders } = body;
+
+        let userMessage = '';
+        let messages = [];
+
+        // Handle both 'message' (string) and 'messages' (array) inputs
+        if (body.messages && Array.isArray(body.messages) && body.messages.length > 0) {
+            messages = body.messages;
+            userMessage = messages[messages.length - 1].content || '';
+        } else if (body.message) {
+            userMessage = body.message;
+            messages = [{ role: 'user', content: userMessage }];
+        } else {
+            return NextResponse.json({ error: 'No message provided' }, { status: 400 });
+        }
+
+        userMessage = userMessage.toLowerCase();
 
         // Context Optimization Strategy:
         // 1. Filter by keywords in user message (if cities mentioned)
         // 2. Always include recent tenders
         // 3. Hard limit total count to avoid Token Limit (130k tokens)
 
-        let relevantTenders = tenders;
+        let relevantTenders = tenders || [];
 
         // Simple keyword based RAG
         const keywords = userMessage.split(/[\s,.-]+/).filter(w => w.length > 3);
