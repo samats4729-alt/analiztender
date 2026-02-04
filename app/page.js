@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/components/AuthProvider';
+import { useRouter } from 'next/navigation';
 import Chat from '@/components/Chat';
 import Tenders from '@/components/Tenders';
 import styles from './page.module.css';
@@ -11,10 +13,21 @@ import {
     Menu,
     Bell,
     User,
-    Box
+    Box,
+    LogOut
 } from 'lucide-react';
 
 export default function Home() {
+    // Auth Protection
+    const { user, loading, signOut } = useAuth();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (!loading && !user) {
+            router.push('/login');
+        }
+    }, [user, loading, router]);
+
     // Current active view
     const [activeTab, setActiveTab] = useState('tenders');
     // Mobile sidebar toggle
@@ -27,6 +40,10 @@ export default function Home() {
         setActiveTab(tab);
         closeSidebar();
     };
+
+    // Show nothing while checking auth
+    if (loading) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>Загрузка...</div>;
+    if (!user) return null; // Will redirect
 
     return (
         <div className={`${styles.layout} ${isSidebarOpen ? styles.menuOpen : ''}`}>
@@ -56,12 +73,27 @@ export default function Home() {
                         <div className={styles.navIcon}><MessageSquare size={20} /></div>
                         <span>Чат с ИИ</span>
                     </button>
-
-
                 </nav>
 
                 <div className={styles.sidebarFooter}>
-                    v1.0.4
+                    <div style={{ marginBottom: '1rem', fontSize: '0.8rem', opacity: 0.7 }}>
+                        {user.email}
+                    </div>
+                    <button onClick={signOut} style={{
+                        background: 'rgba(255,255,255,0.1)',
+                        border: 'none',
+                        color: 'white',
+                        padding: '0.5rem 1rem',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        width: '100%',
+                        justifyContent: 'center'
+                    }}>
+                        <LogOut size={16} /> Выйти
+                    </button>
                 </div>
             </aside>
 

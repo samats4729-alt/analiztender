@@ -1,14 +1,19 @@
-import './globals.css'
+import './globals.css';
+import AuthProvider from '@/components/AuthProvider';
 
 export const metadata = {
-    title: 'Tender Analyzer',
-    description: 'Pro Tender Analysis Platform',
-}
+    title: 'TenderAI | Samat Logistics',
+    description: 'AI-powered tender analysis',
+};
 
 export default function RootLayout({ children }) {
     return (
         <html lang="ru">
-            <body>{children}</body>
+            <body>
+                <AuthProvider>
+                    {children}
+                </AuthProvider>
+            </body>
         </html>
-    )
+    );
 }
