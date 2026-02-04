@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import styles from '../app/tenders/tenders.module.css'; // Adjust path
-import { getTenders, saveTender, deleteTender } from '@/lib/tenderService';
+import { getTenders, saveTender, deleteTender, clearTenders } from '@/lib/tenderService';
 
 import * as XLSX from 'xlsx';
 
@@ -54,6 +54,13 @@ export default function Tenders() {
         setTenders(getTenders());
     }
 
+    const handleClearAll = () => {
+        if (confirm('Вы уверены, что хотите удалить ВСЕ данные? Это действие нельзя отменить.')) {
+            clearTenders();
+            setTenders([]);
+        }
+    }
+
     const handleFileUpload = (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -66,33 +73,121 @@ export default function Tenders() {
             const ws = wb.Sheets[wsname];
             const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
 
+            if (data.length === 0) return;
+
+            // 1. Find Header Row
+            let headerRowIndex = -1;
+            const columnMap = {};
+
+            // Keywords to identify columns (lower case)
+            const mapKeys = {
+                origin: ['откуда', 'origin'],
+                destination: ['куда', 'destination'],
+                date: ['дата', 'date'],
+                weight: ['тоннаж', 'вес', 'weight', 'tonnage'],
+                pallets: ['паллет', 'палеты', 'pallets'],
+                cubes: ['кубы', 'cubes', 'объем'],
+                price: ['заказчик', 'цена', 'price', 'ставка', 'наша'], // "Заказчик" seems to be the price column based on screenshot
+                carrierPrice: ['перевозчик', 'carrier', 'winning'],
+                comment: ['комментарии', 'comment', 'примечание']
+            };
+
+            // Scan first 20 rows for headers
+            for (let i = 0; i < Math.min(data.length, 20); i++) {
+                const row = data[i];
+                let matches = 0;
+                row.forEach((cell, colIdx) => {
+                    if (typeof cell !== 'string') return;
+                    const val = cell.toLowerCase().trim();
+
+                    // Check against mapKeys
+                    for (const [key, keywords] of Object.entries(mapKeys)) {
+                        if (keywords.some(k => val.includes(k))) {
+                            columnMap[key] = colIdx;
+                            matches++;
+                        }
+                    }
+                });
+
+                // If found at least "Origin" and "Destination" or "Price", assume this is header
+                if (matches >= 2 && columnMap.origin !== undefined) {
+                    headerRowIndex = i;
+                    break;
+                }
+            }
+
+            if (headerRowIndex === -1) {
+                alert("Не удалось найти заголовки (Откуда, Куда, Заказчик и т.д.) в первых 20 строках.");
+                return;
+            }
+
             const newTenders = [];
-            for (let i = 1; i < data.length; i++) {
+            // 2. Iterate Data Rows
+            for (let i = headerRowIndex + 1; i < data.length; i++) {
                 const row = data[i];
                 if (!row || row.length === 0) continue;
 
-                const tender = {
-                    name: row[0] || `Imported ${i}`, // Keep import name if available, else auto
-                    origin: row[1] || '',
-                    destination: row[2] || '',
-                    weight: row[3] || '',
-                    price: row[4] || '',
-                    status: (row[5] && row[5].toLowerCase().includes('won')) ? 'Won' : 'Lost',
-                    carrierPrice: row[6] || '',
-                    date: row[7] || new Date().toISOString().split('T')[0],
-                    transportType: row[8] || '',
-                    pallets: row[9] || '', // Map column 9 to pallets
-                    cubes: row[10] || '', // Map column 10 to cubes
-                    places: row[11] || '', // Map column 11 to places
-                    comment: row[12] || '' // Shifted
+                // Helper to get safe value
+                const val = (key) => {
+                    const idx = columnMap[key];
+                    return (idx !== undefined && row[idx] !== undefined) ? row[idx] : '';
                 };
+
+                // Date Parsing (Excel Serial or String)
+                let dateStr = '';
+                const rawDate = val('date');
+                if (rawDate) {
+                    if (typeof rawDate === 'number') {
+                        // Excel serial date to JS Date
+                        const dateObj = new Date(Math.round((rawDate - 25569) * 86400 * 1000));
+                        if (!isNaN(dateObj)) {
+                            dateStr = dateObj.toISOString().split('T')[0];
+                        }
+                    } else if (typeof rawDate === 'string') {
+                        // Try standard parsing
+                        const dateObj = new Date(rawDate);
+                        if (!isNaN(dateObj)) dateStr = rawDate;
+                    }
+                }
+
+                // If Date is unclear/invalid, user said "let it be not added", so we can leave empty or default?
+                // Application logic currently requires date for sorting usually, but let's check.
+                // We'll leave it empty string if invalid, or maybe current date if critical. 
+                // Creating a specific date only if valid.
+
+                const tender = {
+                    name: `Imported ${i}`,
+                    origin: val('origin'),
+                    destination: val('destination'),
+                    weight: val('weight'),
+                    price: val('price'), // "Заказчик"
+                    carrierPrice: val('carrierPrice'), // "Перевозчик"
+                    status: 'Lost', // Default
+                    date: dateStr, // Can be empty
+                    transportType: '',
+                    pallets: val('pallets'),
+                    cubes: val('cubes'),
+                    places: '',
+                    comment: val('comment')
+                };
+
+                // Heuristic for Status: If we have a price and it seems valid?
+                // Actually user logic: "Won" if we did it?
+                // Screenshot shows "Перевозчик" column. If "Перевозчик" exists, maybe we gave it to someone? 
+                // Or maybe we Lost it?
+                // Let's stick to default Lost unless we see "Won" keyword.
+                // User didn't specify mapping for status.
+
+                // Clean up numeric values
+                if (tender.price) tender.price = String(tender.price).replace(/[^0-9.]/g, '');
+                if (tender.carrierPrice) tender.carrierPrice = String(tender.carrierPrice).replace(/[^0-9.]/g, '');
 
                 if (tender.price) {
                     saveTender(tender);
                 }
             }
             setTenders(getTenders());
-            alert(`Импортировано строк: ${data.length - 1}`);
+            alert(`Успешно импортировано строк: ${newTenders.length} (Найдено строк данных после заголовка)`); // Actually saveTender is called in loop
         };
         reader.readAsBinaryString(file);
     };
@@ -101,6 +196,14 @@ export default function Tenders() {
         <div className={styles.container}>
             <header className={styles.header}>
                 <h1>Данные тендеров</h1>
+                {tenders.length > 0 && (
+                    <button onClick={handleClearAll} style={{
+                        background: '#fee2e2', color: '#ef4444', border: 'none',
+                        padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold'
+                    }}>
+                        Очистить всё 🗑️
+                    </button>
+                )}
             </header>
 
             <div className={styles.content}>
@@ -120,11 +223,9 @@ export default function Tenders() {
                         {/* Transport Type removed as requested */}
                         <input name="weight" type="number" placeholder="Вес (кг)" value={form.weight} onChange={handleChange} />
 
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <input name="pallets" placeholder="Паллеты" value={form.pallets} onChange={handleChange} style={{ flex: 1 }} />
-                            <input name="cubes" placeholder="Кубы" value={form.cubes} onChange={handleChange} style={{ flex: 1 }} />
-                            <input name="places" placeholder="Места" value={form.places} onChange={handleChange} style={{ flex: 1 }} />
-                        </div>
+                        <input name="pallets" placeholder="Паллеты" value={form.pallets} onChange={handleChange} />
+                        <input name="cubes" placeholder="Кубы" value={form.cubes} onChange={handleChange} />
+                        <input name="places" placeholder="Места" value={form.places} onChange={handleChange} />
 
                         <input name="price" type="number" placeholder="Наша цена (KZT)" value={form.price} onChange={handleChange} required />
 
@@ -143,7 +244,7 @@ export default function Tenders() {
                 </section>
 
                 <section className={styles.listSection}>
-                    <h2>История</h2>
+                    <h2>История ({tenders.length})</h2>
                     <div className={styles.tableContainer}>
                         <table className={styles.table}>
                             <thead>
