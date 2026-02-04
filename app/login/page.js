@@ -56,7 +56,7 @@ export default function LoginPage() {
                         <Box size={32} />
                     </div>
                     <h1 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#0f172a' }}>Вход в систему</h1>
-                    <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Samat Logistics TenderAI</p>
+
                 </div>
 
                 <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
