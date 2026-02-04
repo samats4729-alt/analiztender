@@ -107,13 +107,13 @@ export default function Tenders() {
 
                     <h2>Добавить новый тендер</h2>
                     <form onSubmit={handleSubmit} className={styles.form}>
-                        {/* ID / Name */}
-                        <input name="name" placeholder="Название / ID тендера" value={form.name} onChange={handleChange} required />
+                        {/* ID */}
+                        <input name="name" placeholder="ID тендера" value={form.name} onChange={handleChange} required />
 
                         <input name="origin" placeholder="Откуда" value={form.origin} onChange={handleChange} />
                         <input name="destination" placeholder="Куда" value={form.destination} onChange={handleChange} />
 
-                        <input name="transportType" placeholder="Тип авто (Трал/Фура)" value={form.transportType} onChange={handleChange} />
+                        <input name="transportType" placeholder="Тип транспортного средства" value={form.transportType} onChange={handleChange} />
                         <input name="weight" type="number" placeholder="Вес (кг)" value={form.weight} onChange={handleChange} />
                         <input name="capacity" placeholder="Палеты / Кубы / Места" value={form.capacity} onChange={handleChange} />
 
@@ -139,9 +139,9 @@ export default function Tenders() {
                         <table className={styles.table}>
                             <thead>
                                 <tr>
-                                    <th>ID/Назв.</th>
+                                    <th>ID</th>
                                     <th>Маршрут</th>
-                                    <th>Груз/Авто</th>
+                                    <th>Тип ТС / Груз</th>
                                     <th>Ставки</th>
                                     <th>Статус</th>
                                     <th>Действие</th>

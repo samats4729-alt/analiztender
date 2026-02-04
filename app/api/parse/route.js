@@ -14,7 +14,7 @@ export async function POST(request) {
         const systemPrompt = `You are a data extraction assistant. 
         Extract tender data from the provided text into a JSON array.
         Target keys: 
-        - "name" (string)
+        - "name" (string - ID)
         - "origin" (string)
         - "destination" (string)
         - "weight" (number or string)

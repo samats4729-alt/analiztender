@@ -21,7 +21,7 @@ export async function POST(request) {
     
     ${hasData
                 ? `Вот исторические данные по тендерам (JSON), обрати внимание на поля: 
-           - 'name' (ID/Название)
+           - 'name' (ID тендера)
            - 'origin', 'destination' (Маршрут)
            - 'transportType' (Тип авто: Трал, Фура и т.д.)
            - 'capacity' (Объем/Палеты/Кубы - вместо просто груза)
