@@ -10,48 +10,70 @@ export async function POST(request) {
     });
 
     try {
-        const { message, tenders } = await request.json();
+        const { messages, tenders } = await request.json();
+        const userMessage = messages[messages.length - 1].content.toLowerCase();
 
-        // Check if tenders exist
-        const hasData = tenders && tenders.length > 0;
+        // Context Optimization Strategy:
+        // 1. Filter by keywords in user message (if cities mentioned)
+        // 2. Always include recent tenders
+        // 3. Hard limit total count to avoid Token Limit (130k tokens)
 
-        // Construct system prompt with historical context
+        let relevantTenders = tenders;
+
+        // Simple keyword based RAG
+        const keywords = userMessage.split(/[\s,.-]+/).filter(w => w.length > 3);
+        const matchedTenders = tenders.filter(t =>
+            keywords.some(k =>
+                (t.origin && t.origin.toLowerCase().includes(k)) ||
+                (t.destination && t.destination.toLowerCase().includes(k)) ||
+                (t.comment && t.comment.toLowerCase().includes(k))
+            )
+        );
+
+        if (matchedTenders.length > 50) {
+            // If we found specific matches, prioritize them!
+            relevantTenders = matchedTenders;
+        } else {
+            // Otherwise, just take the most recent ones
+            relevantTenders = tenders;
+        }
+
+        // Hard Limit to 400 items (~10k-20k tokens safe range)
+        // DeepSeek context is 128k, but let's be safe and snappy.
+        if (relevantTenders.length > 400) {
+            relevantTenders = relevantTenders.slice(0, 400);
+        }
+
+        const hasData = relevantTenders.length > 0;
+
         let systemPrompt = `Ты ИИ-помощник по анализу тендеров. 
     Твоя цель - помочь пользователю выигрывать тендеры, анализируя прошлые данные.
     
     ${hasData
-                ? `Вот исторические данные по тендерам (JSON), обрати внимание на поля: 
+                ? `Вот исторические данные по тендерам (JSON, последние или релевантные ${relevantTenders.length} шт): 
            - 'name' (ID тендера)
            - 'origin', 'destination' (Маршрут)
-           - 'transportType' (Тип авто: Трал, Фура и т.д.)
-           - 'pallets' (Паллеты)
-           - 'cubes' (Кубы, m3)
-           - 'places' (Количество мест)
+           - 'transportType' (Тип авто)
+           - 'pallets', 'cubes', 'places' (Груз)
            - 'weight' (Вес)
            - 'price' (Наша ставка)
-           - 'carrierPrice' (Цена перевозчика/Рыночная цена/Цена победителя - это цена, за которую реально уехал груз или цена конкурента, если мы проиграли)
-           - 'comment' (Детали, например "экскаватор EX-1900")
+           - 'carrierPrice' (Цена перевозчика/Индикатив)
+           - 'status' (Won/Lost)
            
            Данные:
-           ${JSON.stringify(tenders, null, 2)}`
-                : `У тебя пока НЕТ исторических данных. 
-           Если пользователь спрашивает про анализ или цены, ОТВЕТЬ ЕМУ: 
-           "У меня пока нет данных для анализа. Пожалуйста, перейдите во вкладку 'Тендеры' и загрузите Excel-файл или вставьте текст с историей ваших поездок."
-           Не выдумывай цены, если данных нет.`
+           ${JSON.stringify(relevantTenders, null, 2)}`
+                : `У тебя пока НЕТ данных для этого запроса. Ответь: "Недостаточно данных для анализа этого направления."`
             }
     
-    Когда уместно (и есть данные):
-    1. Сравнивай текущий запрос с похожими прошлыми тендерами (маршрут, тип авто, палеты/кубы, вес).
-    2. Если пользователь спрашивает цену:
-       - Анализируй 'carrierPrice', если она есть. Это реальная цена перевозки. 
-       - Если мы проиграли (status='Lost') и 'carrierPrice' меньше нашей 'price', значит мы дали слишком много. Предложи цену ближе к 'carrierPrice'.
-       - Если мы выиграли, смотри нашу 'price'.
-    3. Будь кратким и профессиональным. Отвечай на русском языке. Используй Markdown.`;
+    Сценарий:
+    1. Если найдены похожие маршруты — скажи среднюю выигрышную цену (carrierPrice) и нашу цену.
+    2. Дай рекомендацию по цене.
+    3. Будь краток.`;
 
         const completion = await openai.chat.completions.create({
             messages: [
                 { role: "system", content: systemPrompt },
-                { role: "user", content: message }
+                ...messages
             ],
             model: "deepseek-chat",
         });

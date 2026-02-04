@@ -192,6 +192,24 @@ export default function Tenders() {
         reader.readAsBinaryString(file);
     };
 
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 50;
+
+    // Reset page to 1 when tenders change (e.g. import/clear)
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [tenders.length]);
+
+    // Calculate Slice
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentTenders = tenders.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(tenders.length / itemsPerPage);
+
+    const handleNext = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
+    const handlePrev = () => setCurrentPage(prev => Math.max(prev - 1, 1));
+
     return (
         <div className={styles.container}>
             <header className={styles.header}>
@@ -244,7 +262,23 @@ export default function Tenders() {
                 </section>
 
                 <section className={styles.listSection}>
-                    <h2>История ({tenders.length})</h2>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <h2>История ({tenders.length})</h2>
+                        {totalPages > 1 && (
+                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                <button onClick={handlePrev} disabled={currentPage === 1}
+                                    style={{ padding: '0.5rem', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', opacity: currentPage === 1 ? 0.5 : 1 }}>
+                                    &larr; Назад
+                                </button>
+                                <span>Стр. {currentPage} из {totalPages}</span>
+                                <button onClick={handleNext} disabled={currentPage === totalPages}
+                                    style={{ padding: '0.5rem', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', opacity: currentPage === totalPages ? 0.5 : 1 }}>
+                                    Вперед &rarr;
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
                     <div className={styles.tableContainer}>
                         <table className={styles.table}>
                             <thead>
@@ -258,7 +292,7 @@ export default function Tenders() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {tenders.map(t => (
+                                {currentTenders.map(t => (
                                     <tr key={t.id}>
                                         <td>
                                             {t.origin} &rarr; {t.destination}<br />
