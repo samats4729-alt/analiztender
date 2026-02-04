@@ -9,14 +9,17 @@ import * as XLSX from 'xlsx';
 export default function Tenders() {
     const [tenders, setTenders] = useState([]);
     const [form, setForm] = useState({
-        name: '',
+        name: '', // ID/Name
         origin: '',
         destination: '',
         weight: '',
-        price: '',
+        price: '', // Our Price
         date: '',
         status: 'Lost',
-        winningPrice: ''
+        carrierPrice: '', // Was winningPrice, now Price of Carrier (Cost/Market)
+        transportType: '',
+        capacity: '', // Was cargoType, now Pallets/Cubes
+        comment: ''
     });
 
     useEffect(() => {
@@ -33,7 +36,11 @@ export default function Tenders() {
 
         saveTender(form);
         setTenders(getTenders());
-        setForm({ name: '', origin: '', destination: '', weight: '', price: '', date: '', status: 'Lost', winningPrice: '' });
+        setForm({
+            name: '', origin: '', destination: '', weight: '', price: '',
+            date: '', status: 'Lost', carrierPrice: '',
+            transportType: '', capacity: '', comment: ''
+        });
     };
 
     const handleDelete = (id) => {
@@ -53,11 +60,7 @@ export default function Tenders() {
             const ws = wb.Sheets[wsname];
             const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
 
-            // Removing header row if exists and mapping
-            // Assuming simplified columns order or smart detection could be done. 
-            // For MVP: assume user maps manually or standard format:
-            // Name, Origin, Destination, Weight, Price, Status, WinningPrice, Date
-
+            // Mapping: Name, Origin, Destination, Weight, Price, Status, CarrierPrice, Date, Transport, Capacity, Comment
             const newTenders = [];
             // Skip header row 0
             for (let i = 1; i < data.length; i++) {
@@ -72,8 +75,11 @@ export default function Tenders() {
                     weight: row[3] || '',
                     price: row[4] || '',
                     status: (row[5] && row[5].toLowerCase().includes('won')) ? 'Won' : 'Lost', // Very simple heuristic
-                    winningPrice: row[6] || '',
-                    date: row[7] || new Date().toISOString().split('T')[0]
+                    carrierPrice: row[6] || '',
+                    date: row[7] || new Date().toISOString().split('T')[0],
+                    transportType: row[8] || '',
+                    capacity: row[9] || '', // Pallets/Cubes
+                    comment: row[10] || ''
                 };
 
                 if (tender.price) { // Minimal validation
@@ -101,15 +107,18 @@ export default function Tenders() {
 
                     <h2>Добавить новый тендер</h2>
                     <form onSubmit={handleSubmit} className={styles.form}>
+                        {/* ID / Name */}
                         <input name="name" placeholder="Название / ID тендера" value={form.name} onChange={handleChange} required />
+
                         <input name="origin" placeholder="Откуда" value={form.origin} onChange={handleChange} />
                         <input name="destination" placeholder="Куда" value={form.destination} onChange={handleChange} />
+
+                        <input name="transportType" placeholder="Тип авто (Трал/Фура)" value={form.transportType} onChange={handleChange} />
                         <input name="weight" type="number" placeholder="Вес (кг)" value={form.weight} onChange={handleChange} />
+                        <input name="capacity" placeholder="Палеты / Кубы / Места" value={form.capacity} onChange={handleChange} />
+
                         <input name="price" type="number" placeholder="Наша цена (KZT)" value={form.price} onChange={handleChange} required />
 
-                        {/* New fields: Transport, Cargo, Comment */}
-                        <input name="transportType" placeholder="Тип авто (Трал/Фура)" value={form.transportType} onChange={handleChange} />
-                        <input name="cargoType" placeholder="Груз (Спецтехника)" value={form.cargoType} onChange={handleChange} />
                         <input name="comment" placeholder="Комментарий" value={form.comment} onChange={handleChange} />
 
                         <input name="date" type="date" value={form.date} onChange={handleChange} />
@@ -117,9 +126,9 @@ export default function Tenders() {
                             <option value="Won">Выигран</option>
                             <option value="Lost">Проигран</option>
                         </select>
-                        {form.status === 'Lost' && (
-                            <input name="winningPrice" type="number" placeholder="Цена победителя (если известна)" value={form.winningPrice} onChange={handleChange} />
-                        )}
+
+                        <input name="carrierPrice" type="number" placeholder="Цена перевозчика (Индикатив)" value={form.carrierPrice} onChange={handleChange} />
+
                         <button type="submit">Добавить запись</button>
                     </form>
                 </section>
@@ -130,30 +139,37 @@ export default function Tenders() {
                         <table className={styles.table}>
                             <thead>
                                 <tr>
-                                    <th>Название</th>
-                                    <th>Откуда</th>
-                                    <th>Куда</th>
-                                    <th>Вес</th>
-                                    <th>Цена</th>
+                                    <th>ID/Назв.</th>
+                                    <th>Маршрут</th>
+                                    <th>Груз/Авто</th>
+                                    <th>Ставки</th>
                                     <th>Статус</th>
-                                    <th>Цена победителя</th>
-                                    <th>Дата</th>
                                     <th>Действие</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {tenders.map(t => (
                                     <tr key={t.id}>
-                                        <td>{t.name}</td>
-                                        <td>{t.origin || t.route?.split('->')[0] || '-'}</td>
-                                        <td>{t.destination || t.route?.split('->')[1] || '-'}</td>
-                                        <td>{t.weight ? t.weight + ' кг' : '-'}</td>
-                                        <td>{parseInt(t.price).toLocaleString()} ₸</td>
+                                        <td>
+                                            <strong>{t.name}</strong><br />
+                                            <span style={{ fontSize: '0.8rem', color: '#666' }}>{t.date}</span>
+                                        </td>
+                                        <td>
+                                            {t.origin} &rarr; {t.destination}<br />
+                                        </td>
+                                        <td style={{ fontSize: '0.9rem' }}>
+                                            {t.transportType && <div>🚛 {t.transportType}</div>}
+                                            {t.weight && <div>⚖️ {t.weight} кг</div>}
+                                            {t.capacity && <div>📦 {t.capacity}</div>}
+                                            {t.comment && <div style={{ fontStyle: 'italic', color: '#555' }}>"{t.comment}"</div>}
+                                        </td>
+                                        <td>
+                                            <div>Мы: <b>{parseInt(t.price).toLocaleString()} ₸</b></div>
+                                            {t.carrierPrice && <div style={{ color: '#666', fontSize: '0.9rem' }}>Перевозчик: {parseInt(t.carrierPrice).toLocaleString()} ₸</div>}
+                                        </td>
                                         <td className={t.status === 'Won' ? styles.won : styles.lost}>
                                             {t.status === 'Won' ? 'Выигран' : 'Проигран'}
                                         </td>
-                                        <td>{t.winningPrice ? parseInt(t.winningPrice).toLocaleString() + ' ₸' : '-'}</td>
-                                        <td>{t.date}</td>
                                         <td><button onClick={() => handleDelete(t.id)} className={styles.deleteBtn}>×</button></td>
                                     </tr>
                                 ))}

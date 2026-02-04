@@ -19,11 +19,11 @@ export async function POST(request) {
         - "destination" (string)
         - "weight" (number or string)
         - "transportType" (string, e.g. Tents, Ref, Tral)
-        - "cargoType" (string)
+        - "capacity" (string - pallets, cubes, volume)
         - "comment" (string)
-        - "price" (number)
+        - "price" (number - our price)
         - "status" (Won/Lost)
-        - "winningPrice" (number)
+        - "carrierPrice" (number - winning/market price)
         - "date" (YYYY-MM-DD)
         
         Rules:
