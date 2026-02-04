@@ -11,7 +11,6 @@ import {
     MessageSquare,
     Bot,
     Menu,
-    Bell,
     User,
     Box,
     LogOut
@@ -112,9 +111,7 @@ export default function Home() {
 
                     {/* Header Actions */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                        <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex' }}>
-                            <Bell size={20} />
-                        </button>
+
                         <div style={{
                             width: '40px', height: '40px', borderRadius: '50%',
                             background: '#e0e7ff', color: '#4f46e5',
