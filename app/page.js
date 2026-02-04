@@ -57,15 +57,11 @@ export default function Home() {
                         <span>Чат с ИИ</span>
                     </button>
 
-                    {/* Placeholder for future features */}
-                    <button className={styles.navItem} disabled style={{ opacity: 0.5, cursor: 'not-allowed' }}>
-                        <div className={styles.navIcon}><BarChart3 size={20} /></div>
-                        <span>Аналитика (Скоро)</span>
-                    </button>
+
                 </nav>
 
                 <div className={styles.sidebarFooter}>
-                    Samat Logistics <br /> v1.0.4
+                    v1.0.4
                 </div>
             </aside>
 
