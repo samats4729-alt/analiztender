@@ -4,6 +4,15 @@ import { useState } from 'react';
 import Chat from '@/components/Chat';
 import Tenders from '@/components/Tenders';
 import styles from './page.module.css';
+import {
+    LayoutDashboard,
+    MessageSquare,
+    Bot,
+    Menu,
+    Bell,
+    User,
+    Box
+} from 'lucide-react';
 
 export default function Home() {
     // Current active view
@@ -27,7 +36,8 @@ export default function Home() {
             {/* Sidebar */}
             <aside className={`${styles.sidebar} ${isSidebarOpen ? styles.open : ''}`}>
                 <div className={styles.logoArea}>
-                    <span>TenderAI 🤖</span>
+                    <Box size={28} color="white" strokeWidth={2.5} />
+                    <span>TenderAI</span>
                 </div>
 
                 <nav className={styles.nav}>
@@ -35,7 +45,7 @@ export default function Home() {
                         className={`${styles.navItem} ${activeTab === 'tenders' ? styles.active : ''}`}
                         onClick={() => handleTabChange('tenders')}
                     >
-                        <span className={styles.navIcon}>📋</span>
+                        <div className={styles.navIcon}><LayoutDashboard size={20} /></div>
                         <span>Тендеры</span>
                     </button>
 
@@ -43,21 +53,19 @@ export default function Home() {
                         className={`${styles.navItem} ${activeTab === 'chat' ? styles.active : ''}`}
                         onClick={() => handleTabChange('chat')}
                     >
-                        <span className={styles.navIcon}>💬</span>
+                        <div className={styles.navIcon}><MessageSquare size={20} /></div>
                         <span>Чат с ИИ</span>
                     </button>
 
                     {/* Placeholder for future features */}
                     <button className={styles.navItem} disabled style={{ opacity: 0.5, cursor: 'not-allowed' }}>
-                        <span className={styles.navIcon}>📊</span>
+                        <div className={styles.navIcon}><BarChart3 size={20} /></div>
                         <span>Аналитика (Скоро)</span>
                     </button>
                 </nav>
 
                 <div className={styles.sidebarFooter}>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                        Samat Logistics <br /> v1.0.2
-                    </div>
+                    Samat Logistics <br /> v1.0.4
                 </div>
             </aside>
 
@@ -67,19 +75,25 @@ export default function Home() {
                 <header className={styles.header}>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
                         <button className={styles.mobileToggle} onClick={toggleSidebar}>
-                            ☰
+                            <Menu size={24} />
                         </button>
                         <div className={styles.headerTitle}>
                             {activeTab === 'tenders' ? 'Управление тендерами' : 'AI Ассистент'}
                         </div>
                     </div>
 
-                    {/* Header Actions (User Profile, etc) could go here */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        {/* We can move the 'Clear All' button here via Context later, 
-                            but for now it remains in Tenders for simplicity of state access */}
-                        <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#e0e7ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-                            A
+                    {/* Header Actions */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                        <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex' }}>
+                            <Bell size={20} />
+                        </button>
+                        <div style={{
+                            width: '40px', height: '40px', borderRadius: '50%',
+                            background: '#e0e7ff', color: '#4f46e5',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            border: '2px solid white', boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+                        }}>
+                            <User size={20} />
                         </div>
                     </div>
                 </header>
