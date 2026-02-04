@@ -1,282 +1,292 @@
-/* Container */
+/* Main Container */
 .container {
-    padding: 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    color: #333;
-}
-
-.header {
-    margin-bottom: 2rem;
-    text-align: center;
-}
-
-.header h1 {
-    font-size: 2rem;
-    font-weight: 700;
-    color: #111;
-    margin: 0;
-}
-
-/* Page Layout */
-.content {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 2.5rem;
+    max-width: 1400px;
+    /* Wider for dashboard feel */
+    margin: 0 auto;
 }
 
-/* Cards (Sections) */
-.inputSection,
-.listSection {
+/* Sections - The Card Look */
+.section {
     background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-    /* Soft premium shadow */
-    padding: 2rem;
-    border: 1px solid #eaeaea;
+    border-radius: var(--radius-xl);
+    /* 30px */
+    box-shadow: var(--shadow-card);
+    border: none;
+    /* No border for cleaner look */
+    overflow: hidden;
+    padding: 0;
+    /* Padding handled inside */
 }
 
-.inputSection h2,
-.listSection h2 {
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin-bottom: 1.5rem;
-    color: #444;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 0.5rem;
+.sectionHeader {
+    padding: 2rem 2.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    /* Optional: Slight background for header? No, keep clean white */
 }
 
-/* File Upload Area */
-.inputSection input[type="file"] {
-    background: #f9fafb;
-    padding: 1rem;
-    border: 2px dashed #ddd;
-    /* Dashed upload zone */
-    border-radius: 8px;
-    width: 100%;
-    cursor: pointer;
-    transition: all 0.2s;
+.sectionTitle {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-main);
+    letter-spacing: -0.02em;
 }
 
-.inputSection input[type="file"]:hover {
-    border-color: #0070f3;
-    background: #f0f7ff;
+.sectionContent {
+    padding: 0 2.5rem 2.5rem 2.5rem;
 }
 
-/* Form Grid System - The Key Fix */
-.form {
+/* Form Grid */
+.formGrid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    /* 4 Column Grid */
-    gap: 1rem;
-    /* Consistent spacing */
-    align-items: end;
-    /* Align bottoms of inputs/buttons */
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+    align-items: start;
 }
 
-/* Control spans for specific inputs to create hierarchy */
-/* Route: Origin (2 cols) -> Destination (2 cols) */
-.form input[name="origin"],
-.form input[name="destination"] {
-    grid-column: span 2;
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
 }
 
-/* Cargo: Weight(1), Pallets(1), Cubes(1), Places(1) */
-.form input[name="weight"],
-.form input[name="pallets"],
-.form input[name="cubes"],
-.form input[name="places"] {
-    grid-column: span 1;
+.label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-left: 4px;
+    /* Align with input curve */
 }
 
-/* Financials & Status: Price(1), CarrierPrice(1), Status(1), Date(1) */
-.form input[name="price"],
-.form input[name="carrierPrice"],
-.form select[name="status"],
-.form input[name="date"] {
-    grid-column: span 1;
-}
-
-/* Comment: Full Width */
-.form input[name="comment"] {
-    grid-column: span 4;
-}
-
-/* Button: Full Width */
-.form button {
-    grid-column: span 4;
-    margin-top: 1rem;
-}
-
-
-/* Inputs & Selects Styling */
-.form input,
-.form select {
-    width: 100%;
-    padding: 0.75rem 1rem;
-    /* Comfortable padding */
+.input,
+.select {
+    padding: 0.85rem 1.25rem;
+    border: 2px solid transparent;
+    /* Prepare for focus */
+    background: #f8fafc;
+    /* Very light gray bg for inputs */
+    border-radius: 16px;
+    /* Bubbly inputs */
     font-size: 0.95rem;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    /* Rounded corners */
-    background: #fff;
-    transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.form input:focus,
-.form select:focus {
+    font-weight: 500;
+    color: var(--text-main);
+    transition: all 0.2s ease;
     outline: none;
-    border-color: #0070f3;
-    box-shadow: 0 0 0 3px rgba(0, 112, 243, 0.1);
-    /* Focus ring */
 }
 
-/* Input Labels/Placeholders fix - Ensure inputs have same height */
-.form input::placeholder {
-    color: #999;
+.input:focus,
+.select:focus {
+    background: #fff;
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
 }
 
-/* Button Styling */
-.form button {
-    background: linear-gradient(135deg, #0070f3 0%, #0056b3 100%);
-    /* Gradient */
+.input::placeholder {
+    color: #cbd5e1;
+}
+
+/* Primary Button */
+.submitBtn {
+    grid-column: 1 / -1;
+    background: var(--primary);
     color: white;
+    padding: 1rem;
+    border-radius: 16px;
     border: none;
     font-weight: 600;
-    padding: 1rem;
-    border-radius: 8px;
+    font-size: 1rem;
     cursor: pointer;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    transition: transform 0.1s, box-shadow 0.2s;
+    transition: all 0.2s;
+    margin-top: 1rem;
+    box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
 }
 
-.form button:hover {
-    box-shadow: 0 4px 12px rgba(0, 112, 243, 0.3);
-    transform: translateY(-1px);
+.submitBtn:hover {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 15px 25px -5px rgba(99, 102, 241, 0.5);
 }
 
-.form button:active {
-    transform: translateY(0);
+/* Upload Area */
+.uploadArea {
+    border: 2px dashed #cbd5e1;
+    border-radius: 24px;
+    padding: 3rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #f8fafc;
+    margin-top: 2rem;
 }
 
-/* Table Styling */
+.uploadArea:hover {
+    border-color: var(--primary);
+    background: #eef2ff;
+    transform: scale(1.01);
+}
+
+/* Table styling */
 .tableContainer {
     overflow-x: auto;
-    border-radius: 8px;
-    border: 1px solid #eaeaea;
+    /* border-radius: 20px; Not needed if no bg */
 }
 
 .table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+    /* Gap between rows */
     font-size: 0.95rem;
 }
 
 .table th {
-    background: #f5f5f5;
     text-align: left;
-    padding: 1rem;
+    padding: 1rem 1.5rem;
+    color: var(--text-secondary);
     font-weight: 600;
-    color: #555;
-    border-bottom: 2px solid #ddd;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border: none;
 }
 
 .table td {
-    padding: 1rem;
-    border-bottom: 1px solid #eee;
+    background: #ffffff;
+    /* Row background */
+    padding: 1.25rem 1.5rem;
+    border: none;
+    color: var(--text-main);
     vertical-align: middle;
 }
 
-.table tbody tr:hover {
-    background-color: #f9f9f9;
-    /* Zebra hover */
+/* First and Last cells rounded for "Row Card" effect */
+.table td:first-child {
+    border-top-left-radius: 16px;
+    border-bottom-left-radius: 16px;
 }
 
-.table td strong {
-    color: #000;
+.table td:last-child {
+    border-top-right-radius: 16px;
+    border-bottom-right-radius: 16px;
 }
 
-/* Status Badges */
-.won {
-    color: #0070f3;
-    /* Blue for won (or Green #10b981) */
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.8rem;
-    background: #e6f2ff;
-    padding: 4px 8px;
-    border-radius: 4px;
-    display: inline-block;
+.table tr {
+    transition: transform 0.2s;
 }
 
-.lost {
-    color: #ef4444;
-    /* Red */
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.8rem;
+.table tbody tr:hover td {
+    background: #f8fafc;
+}
+
+/* Badges */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4rem 1rem;
+    border-radius: 99px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.badgeWon {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.badgeLost {
     background: #fee2e2;
-    padding: 4px 8px;
-    border-radius: 4px;
-    display: inline-block;
+    color: #b91c1c;
 }
 
+/* Typography Helpers */
+.routeArrow {
+    color: #cbd5e1;
+    margin: 0 0.75rem;
+}
+
+.priceMain {
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--text-main);
+}
+
+/* Actions */
 .deleteBtn {
-    background: transparent;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f1f5f9;
+    border-radius: 10px;
     border: none;
-    color: #aaa;
-    font-size: 1.5rem;
+    color: #94a3b8;
     cursor: pointer;
-    line-height: 1;
-    padding: 0 0.5rem;
+    transition: all 0.2s;
 }
 
 .deleteBtn:hover {
+    background: #fee2e2;
     color: #ef4444;
 }
 
+.clearBtn {
+    background: #fee2e2;
+    color: #ef4444;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
 
-/* --- Mobile Responsiveness (Max width 768px) --- */
-@media (max-width: 768px) {
-    .container {
-        padding: 1rem;
-    }
+.clearBtn:hover {
+    background: #fecaca;
+    transform: translateY(-1px);
+}
 
-    /* Stack form on mobile */
-    .form {
-        grid-template-columns: 1fr;
-        /* Single column */
-        gap: 0.75rem;
-    }
+/* Pagination */
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 2rem 0 0 0;
+}
 
-    .form input[name="origin"],
-    .form input[name="destination"],
-    .form input[name="weight"],
-    .form input[name="pallets"],
-    .form input[name="cubes"],
-    .form input[name="places"],
-    .form input[name="price"],
-    .form input[name="carrierPrice"],
-    .form select[name="status"],
-    .form input[name="date"],
-    .form input[name="comment"],
-    .form button {
-        grid-column: span 1;
-        /* All full width */
-    }
+.pageBtn {
+    background: white;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    border: none;
+    padding: 0.6rem 1.25rem;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-main);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
 
-    /* Small hack for the 3 small inputs (Pallets/Cubes/Places) to be inline on mobile if desired, 
-       but stacking is safer for touch targets. Currently stacking them. */
+.pageBtn:hover:not(:disabled) {
+    background: var(--primary);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
+}
 
-    .header h1 {
-        font-size: 1.5rem;
-    }
-
-    .table th,
-    .table td {
-        padding: 0.75rem 0.5rem;
-        font-size: 0.85rem;
-    }
+.pageBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+    background: #f1f5f9;
 }
