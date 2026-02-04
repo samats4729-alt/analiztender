@@ -66,7 +66,7 @@ export default function LoginPage() {
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            placeholder="manager@samat.com"
+                            placeholder="manager@tenderai.kz"
                             required
                             style={{
                                 width: '100%',
