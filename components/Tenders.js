@@ -9,16 +9,18 @@ import * as XLSX from 'xlsx';
 export default function Tenders() {
     const [tenders, setTenders] = useState([]);
     const [form, setForm] = useState({
-        name: '', // ID/Name
+        name: '',
         origin: '',
         destination: '',
         weight: '',
         price: '', // Our Price
         date: '',
         status: 'Lost',
-        carrierPrice: '', // Was winningPrice, now Price of Carrier (Cost/Market)
+        carrierPrice: '',
         transportType: '',
-        capacity: '', // Was cargoType, now Pallets/Cubes
+        pallets: '', // New separate field
+        cubes: '',   // New separate field
+        places: '',  // New separate field
         comment: ''
     });
 
@@ -32,14 +34,18 @@ export default function Tenders() {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (!form.name || !form.price) return;
+        if (!form.price) return;
 
-        saveTender(form);
+        const submission = { ...form };
+        // Auto-generate ID if user can't input it
+        submission.name = `Тендер ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`;
+
+        saveTender(submission);
         setTenders(getTenders());
         setForm({
             name: '', origin: '', destination: '', weight: '', price: '',
             date: '', status: 'Lost', carrierPrice: '',
-            transportType: '', capacity: '', comment: ''
+            transportType: '', pallets: '', cubes: '', places: '', comment: ''
         });
     };
 
@@ -60,29 +66,28 @@ export default function Tenders() {
             const ws = wb.Sheets[wsname];
             const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
 
-            // Mapping: Name, Origin, Destination, Weight, Price, Status, CarrierPrice, Date, Transport, Capacity, Comment
             const newTenders = [];
-            // Skip header row 0
             for (let i = 1; i < data.length; i++) {
                 const row = data[i];
                 if (!row || row.length === 0) continue;
 
-                // Flexible mapping - try to grab visible columns
                 const tender = {
-                    name: row[0] || 'Imported ' + i,
+                    name: row[0] || `Imported ${i}`, // Keep import name if available, else auto
                     origin: row[1] || '',
                     destination: row[2] || '',
                     weight: row[3] || '',
                     price: row[4] || '',
-                    status: (row[5] && row[5].toLowerCase().includes('won')) ? 'Won' : 'Lost', // Very simple heuristic
+                    status: (row[5] && row[5].toLowerCase().includes('won')) ? 'Won' : 'Lost',
                     carrierPrice: row[6] || '',
                     date: row[7] || new Date().toISOString().split('T')[0],
                     transportType: row[8] || '',
-                    capacity: row[9] || '', // Pallets/Cubes
-                    comment: row[10] || ''
+                    pallets: row[9] || '', // Map column 9 to pallets
+                    cubes: row[10] || '', // Map column 10 to cubes
+                    places: row[11] || '', // Map column 11 to places
+                    comment: row[12] || '' // Shifted
                 };
 
-                if (tender.price) { // Minimal validation
+                if (tender.price) {
                     saveTender(tender);
                 }
             }
@@ -107,15 +112,19 @@ export default function Tenders() {
 
                     <h2>Добавить новый тендер</h2>
                     <form onSubmit={handleSubmit} className={styles.form}>
-                        {/* ID */}
-                        <input name="name" placeholder="ID тендера" value={form.name} onChange={handleChange} required />
+                        {/* ID input removed as requested */}
 
                         <input name="origin" placeholder="Откуда" value={form.origin} onChange={handleChange} />
                         <input name="destination" placeholder="Куда" value={form.destination} onChange={handleChange} />
 
-                        <input name="transportType" placeholder="Тип транспортного средства" value={form.transportType} onChange={handleChange} />
+                        {/* Transport Type removed as requested */}
                         <input name="weight" type="number" placeholder="Вес (кг)" value={form.weight} onChange={handleChange} />
-                        <input name="capacity" placeholder="Палеты / Кубы / Места" value={form.capacity} onChange={handleChange} />
+
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <input name="pallets" placeholder="Паллеты" value={form.pallets} onChange={handleChange} style={{ flex: 1 }} />
+                            <input name="cubes" placeholder="Кубы" value={form.cubes} onChange={handleChange} style={{ flex: 1 }} />
+                            <input name="places" placeholder="Места" value={form.places} onChange={handleChange} style={{ flex: 1 }} />
+                        </div>
 
                         <input name="price" type="number" placeholder="Наша цена (KZT)" value={form.price} onChange={handleChange} required />
 
@@ -139,9 +148,9 @@ export default function Tenders() {
                         <table className={styles.table}>
                             <thead>
                                 <tr>
-                                    <th>ID</th>
+                                    {/* ID removed */}
                                     <th>Маршрут</th>
-                                    <th>Тип ТС / Груз</th>
+                                    <th>Груз / Инфо</th>
                                     <th>Ставки</th>
                                     <th>Статус</th>
                                     <th>Действие</th>
@@ -151,16 +160,15 @@ export default function Tenders() {
                                 {tenders.map(t => (
                                     <tr key={t.id}>
                                         <td>
-                                            <strong>{t.name}</strong><br />
+                                            {t.origin} &rarr; {t.destination}<br />
                                             <span style={{ fontSize: '0.8rem', color: '#666' }}>{t.date}</span>
                                         </td>
-                                        <td>
-                                            {t.origin} &rarr; {t.destination}<br />
-                                        </td>
                                         <td style={{ fontSize: '0.9rem' }}>
-                                            {t.transportType && <div>🚛 {t.transportType}</div>}
+                                            {/* Transport Type display removed */}
                                             {t.weight && <div>⚖️ {t.weight} кг</div>}
-                                            {t.capacity && <div>📦 {t.capacity}</div>}
+                                            {t.pallets && <div>🪵 {t.pallets} пал.</div>}
+                                            {t.cubes && <div>🧊 {t.cubes} м³</div>}
+                                            {t.places && <div>📦 {t.places} мест</div>}
                                             {t.comment && <div style={{ fontStyle: 'italic', color: '#555' }}>"{t.comment}"</div>}
                                         </td>
                                         <td>

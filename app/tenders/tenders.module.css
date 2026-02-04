@@ -1,124 +1,282 @@
+/* Container */
 .container {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    padding: 0 1rem;
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #333;
 }
 
 .header {
-    padding: 1rem 0;
-    border-bottom: 1px solid #eee;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     margin-bottom: 2rem;
+    text-align: center;
 }
 
-.backLink {
-    color: #666;
-    text-decoration: none;
+.header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #111;
+    margin: 0;
 }
 
+/* Page Layout */
 .content {
     display: flex;
     flex-direction: column;
-    gap: 3rem;
-    max-width: 1000px;
-    margin: 0 auto;
-    width: 100%;
+    gap: 2rem;
 }
 
+/* Cards (Sections) */
+.inputSection,
+.listSection {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    /* Soft premium shadow */
+    padding: 2rem;
+    border: 1px solid #eaeaea;
+}
+
+.inputSection h2,
+.listSection h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    color: #444;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.5rem;
+}
+
+/* File Upload Area */
+.inputSection input[type="file"] {
+    background: #f9fafb;
+    padding: 1rem;
+    border: 2px dashed #ddd;
+    /* Dashed upload zone */
+    border-radius: 8px;
+    width: 100%;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.inputSection input[type="file"]:hover {
+    border-color: #0070f3;
+    background: #f0f7ff;
+}
+
+/* Form Grid System - The Key Fix */
 .form {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
+    /* 4 Column Grid */
     gap: 1rem;
-    background: #f9f9f9;
-    padding: 1.5rem;
-    border-radius: 8px;
+    /* Consistent spacing */
+    align-items: end;
+    /* Align bottoms of inputs/buttons */
 }
 
+/* Control spans for specific inputs to create hierarchy */
+/* Route: Origin (2 cols) -> Destination (2 cols) */
+.form input[name="origin"],
+.form input[name="destination"] {
+    grid-column: span 2;
+}
+
+/* Cargo: Weight(1), Pallets(1), Cubes(1), Places(1) */
+.form input[name="weight"],
+.form input[name="pallets"],
+.form input[name="cubes"],
+.form input[name="places"] {
+    grid-column: span 1;
+}
+
+/* Financials & Status: Price(1), CarrierPrice(1), Status(1), Date(1) */
+.form input[name="price"],
+.form input[name="carrierPrice"],
+.form select[name="status"],
+.form input[name="date"] {
+    grid-column: span 1;
+}
+
+/* Comment: Full Width */
+.form input[name="comment"] {
+    grid-column: span 4;
+}
+
+/* Button: Full Width */
+.form button {
+    grid-column: span 4;
+    margin-top: 1rem;
+}
+
+
+/* Inputs & Selects Styling */
 .form input,
 .form select {
-    padding: 0.5rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    /* Comfortable padding */
+    font-size: 0.95rem;
     border: 1px solid #ddd;
-    border-radius: 4px;
+    border-radius: 8px;
+    /* Rounded corners */
+    background: #fff;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
+.form input:focus,
+.form select:focus {
+    outline: none;
+    border-color: #0070f3;
+    box-shadow: 0 0 0 3px rgba(0, 112, 243, 0.1);
+    /* Focus ring */
+}
+
+/* Input Labels/Placeholders fix - Ensure inputs have same height */
+.form input::placeholder {
+    color: #999;
+}
+
+/* Button Styling */
 .form button {
-    background: #0070f3;
+    background: linear-gradient(135deg, #0070f3 0%, #0056b3 100%);
+    /* Gradient */
     color: white;
     border: none;
-    border-radius: 4px;
-    padding: 0.5rem 1rem;
+    font-weight: 600;
+    padding: 1rem;
+    border-radius: 8px;
     cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: transform 0.1s, box-shadow 0.2s;
+}
+
+.form button:hover {
+    box-shadow: 0 4px 12px rgba(0, 112, 243, 0.3);
+    transform: translateY(-1px);
+}
+
+.form button:active {
+    transform: translateY(0);
+}
+
+/* Table Styling */
+.tableContainer {
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid #eaeaea;
 }
 
 .table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 1rem;
-}
-
-.table th,
-.table td {
-    text-align: left;
-    padding: 0.75rem;
-    border-bottom: 1px solid #eee;
+    font-size: 0.95rem;
 }
 
 .table th {
-    background: #fafafa;
+    background: #f5f5f5;
+    text-align: left;
+    padding: 1rem;
     font-weight: 600;
+    color: #555;
+    border-bottom: 2px solid #ddd;
 }
 
+.table td {
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+}
+
+.table tbody tr:hover {
+    background-color: #f9f9f9;
+    /* Zebra hover */
+}
+
+.table td strong {
+    color: #000;
+}
+
+/* Status Badges */
 .won {
-    color: green;
-    font-weight: bold;
+    color: #0070f3;
+    /* Blue for won (or Green #10b981) */
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    background: #e6f2ff;
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: inline-block;
 }
 
 .lost {
-    color: red;
+    color: #ef4444;
+    /* Red */
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    background: #fee2e2;
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: inline-block;
 }
 
 .deleteBtn {
     background: transparent;
     border: none;
-    color: #999;
+    color: #aaa;
+    font-size: 1.5rem;
     cursor: pointer;
-    font-size: 1.2rem;
+    line-height: 1;
+    padding: 0 0.5rem;
 }
 
 .deleteBtn:hover {
-    color: red;
+    color: #ef4444;
 }
 
-@media (max-width: 600px) {
+
+/* --- Mobile Responsiveness (Max width 768px) --- */
+@media (max-width: 768px) {
     .container {
-        padding: 0 0.5rem;
-    }
-
-    .content {
-        gap: 1.5rem;
-    }
-
-    .form {
-        grid-template-columns: 1fr;
         padding: 1rem;
     }
 
+    /* Stack form on mobile */
+    .form {
+        grid-template-columns: 1fr;
+        /* Single column */
+        gap: 0.75rem;
+    }
+
+    .form input[name="origin"],
+    .form input[name="destination"],
+    .form input[name="weight"],
+    .form input[name="pallets"],
+    .form input[name="cubes"],
+    .form input[name="places"],
+    .form input[name="price"],
+    .form input[name="carrierPrice"],
+    .form select[name="status"],
+    .form input[name="date"],
+    .form input[name="comment"],
+    .form button {
+        grid-column: span 1;
+        /* All full width */
+    }
+
+    /* Small hack for the 3 small inputs (Pallets/Cubes/Places) to be inline on mobile if desired, 
+       but stacking is safer for touch targets. Currently stacking them. */
+
     .header h1 {
-        font-size: 1.2rem;
+        font-size: 1.5rem;
     }
 
     .table th,
     .table td {
-        padding: 0.5rem;
+        padding: 0.75rem 0.5rem;
         font-size: 0.85rem;
-    }
-
-    .table {
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
     }
 }
