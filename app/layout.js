@@ -2,7 +2,7 @@ import './globals.css';
 import AuthProvider from '@/components/AuthProvider';
 
 export const metadata = {
-    title: 'TenderAI | Samat Logistics',
+    title: 'TenderAI',
     description: 'AI-powered tender analysis',
 };
 
