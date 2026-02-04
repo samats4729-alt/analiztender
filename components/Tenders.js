@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import styles from '../app/tenders/tenders.module.css';
-import { clearTenders } from '../lib/tenderService';
+import { getTenders, addTender, deleteTender, clearTenders } from '../lib/tenderService';
 
 export default function Tenders() {
     const [tenders, setTenders] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     // Form State
     const [form, setForm] = useState({
@@ -28,62 +29,81 @@ export default function Tenders() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 50;
 
-    // Load Data
+    // Load Data from Supabase
     useEffect(() => {
-        const stored = localStorage.getItem('tenders_data');
-        if (stored) setTenders(JSON.parse(stored));
+        loadTenders();
     }, []);
+
+    const loadTenders = async () => {
+        setLoading(true);
+        const data = await getTenders();
+        setTenders(data || []);
+        setLoading(false);
+    };
 
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        const newTender = {
+
+        // Optimistic UI update or wait? Let's wait for simplicity and correctness first.
+        const newTenderPayload = {
             ...form,
-            id: Date.now(),
-            name: `T-${Math.floor(Math.random() * 10000)}` // Auto-generate ID if not needed
+            // ID will be assigned by DB
         };
-        const updated = [newTender, ...tenders];
-        setTenders(updated);
-        localStorage.setItem('tenders_data', JSON.stringify(updated));
 
-        // Reset non-fixed fields
-        setForm(prev => ({
-            ...prev,
-            origin: '', destination: '', weight: '', price: '',
-            carrierPrice: '', pallets: '', cubes: '', places: '', comment: ''
-        }));
-    };
+        const savedTender = await addTender(newTenderPayload);
 
-    const handleDelete = (id) => {
-        const updated = tenders.filter(t => t.id !== id);
-        setTenders(updated);
-        localStorage.setItem('tenders_data', JSON.stringify(updated));
-    };
+        if (savedTender) {
+            // Add to top of list
+            setTenders([savedTender, ...tenders]);
 
-    const handleClearAll = () => {
-        if (confirm('Вы уверены? Это удалит ВСЕ данные о тендерах безвозвратно.')) {
-            clearTenders();
-            setTenders([]);
+            // Reset Form (keep date same)
+            setForm(prev => ({
+                ...prev,
+                origin: '', destination: '', weight: '', price: '',
+                carrierPrice: '', pallets: '', cubes: '', places: '', comment: ''
+            }));
+        } else {
+            alert('Ошибка при сохранении. Проверьте консоль.');
         }
     };
 
-    // Excel Import Logic (Preserved)
+    const handleDelete = async (id) => {
+        if (!confirm('Удалить эту запись?')) return;
+
+        const success = await deleteTender(id);
+        if (success) {
+            setTenders(tenders.filter(t => t.id !== id));
+        } else {
+            alert('Ошибка удаления.');
+        }
+    };
+
+    const handleClearAll = async () => {
+        if (confirm('ВНИМАНИЕ: Это удалит ВСЕ записи из ОБЩЕЙ базы данных.\nЭто действие нельзя отменить.\nВы уверены?')) {
+            const success = await clearTenders();
+            if (success) {
+                setTenders([]);
+            }
+        }
+    };
+
+    // Excel Import Logic
     const handleFileUpload = (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = (evt) => {
+        reader.onload = async (evt) => {
             const bstr = evt.target.result;
             const wb = XLSX.read(bstr, { type: 'binary' });
             const wsname = wb.SheetNames[0];
             const ws = wb.Sheets[wsname];
             const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
 
-            // ... (Keeping exact same parsing logic as before for reliability) ...
             if (data.length < 2) return;
 
             // 1. Detect Header Row
@@ -97,13 +117,11 @@ export default function Tenders() {
             }
 
             if (headerRowIndex === -1) {
-                alert('Не удалось найти заголовки (Откуда, Куда, Дата) в первых 10 строках.');
+                alert('Не удалось найти заголовки (Откуда, Куда, Дата).');
                 return;
             }
 
             const headers = data[headerRowIndex].map(h => String(h).toLowerCase().trim());
-
-            // Map Columns
             const colMap = {};
             headers.forEach((h, index) => {
                 if (h.includes('откуда')) colMap.origin = index;
@@ -117,46 +135,52 @@ export default function Tenders() {
                 else if (h.includes('коммент') || h.includes('примеч')) colMap.comment = index;
             });
 
-            const newTenders = [];
+            let addedCount = 0;
+            const promises = [];
+
+            // Process rows
             for (let i = headerRowIndex + 1; i < data.length; i++) {
                 const row = data[i];
                 if (!row || row.length === 0) continue;
 
                 // Date Parsing
                 let dateVal = colMap.date !== undefined ? row[colMap.date] : '';
-                let formattedDate = '';
+                let formattedDate = new Date().toISOString().split('T')[0]; // Default today
+
                 if (typeof dateVal === 'number') {
                     const jsDate = new Date(Math.round((dateVal - 25569) * 86400 * 1000));
                     formattedDate = jsDate.toISOString().split('T')[0];
-                } else if (typeof dateVal === 'string') {
-                    // Try to parse rudimentary string dates if needed, or leave as is
+                } else if (typeof dateVal === 'string' && dateVal.length > 5) {
                     formattedDate = dateVal;
                 }
 
-                const tender = {
-                    id: Date.now() + i,
+                const tenderPayload = {
                     origin: colMap.origin !== undefined ? (row[colMap.origin] || '') : '',
                     destination: colMap.destination !== undefined ? (row[colMap.destination] || '') : '',
                     date: formattedDate,
-                    weight: colMap.weight !== undefined ? (row[colMap.weight] || '') : '',
+                    weight: colMap.weight !== undefined ? String(row[colMap.weight]) : '',
                     price: colMap.price !== undefined ? String(row[colMap.price]).replace(/[^0-9]/g, '') : '',
                     carrierPrice: colMap.carrierPrice !== undefined ? String(row[colMap.carrierPrice]).replace(/[^0-9]/g, '') : '',
                     comment: colMap.comment !== undefined ? (row[colMap.comment] || '') : '',
-                    pallets: colMap.pallets !== undefined ? (row[colMap.pallets] || '') : '',
-                    cubes: colMap.cubes !== undefined ? (row[colMap.cubes] || '') : '',
-                    status: 'Lost' // Default
+                    pallets: colMap.pallets !== undefined ? String(row[colMap.pallets]) : '',
+                    cubes: colMap.cubes !== undefined ? String(row[colMap.cubes]) : '',
+                    status: 'Lost'
                 };
 
-                // Basic validation: must have route or price
-                if (tender.origin || tender.price) {
-                    newTenders.push(tender);
+                if (tenderPayload.origin || tenderPayload.price) {
+                    // Add async request to queue
+                    promises.push(addTender(tenderPayload));
+                    addedCount++;
                 }
             }
 
-            const updated = [...newTenders, ...tenders];
-            setTenders(updated);
-            localStorage.setItem('tenders_data', JSON.stringify(updated));
-            alert(`Загружено ${newTenders.length} записей!`);
+            if (addedCount > 0) {
+                setLoading(true);
+                await Promise.all(promises); // Wait for all inserts
+                await loadTenders(); // Reload full list
+                setLoading(false);
+                alert(`Загружено ${addedCount} записей в базу!`);
+            }
         };
         reader.readAsBinaryString(file);
     };
@@ -177,8 +201,8 @@ export default function Tenders() {
                 <div className={styles.sectionHeader}>
                     <h2 className={styles.sectionTitle}>Новая запись</h2>
                     {tenders.length > 0 && (
-                        <button onClick={handleClearAll} className={styles.clearBtn}>
-                            Очистить всё 🗑️
+                        <button onClick={handleClearAll} className={styles.clearBtn} style={{ background: '#fee2e2', color: '#dc2626' }}>
+                            Очистить базу 🗑️
                         </button>
                     )}
                 </div>
@@ -237,7 +261,9 @@ export default function Tenders() {
                             <input className={styles.input} name="comment" placeholder="Детали груза..." value={form.comment} onChange={handleChange} />
                         </div>
 
-                        <button type="submit" className={styles.submitBtn}>Добавить запись в базу</button>
+                        <button type="submit" className={styles.submitBtn} disabled={loading}>
+                            {loading ? 'Сохранение...' : 'Добавить запись в базу'}
+                        </button>
                     </form>
 
                     <div style={{ marginTop: '2rem', paddingTop: '2rem', borderTop: '1px solid #eee' }}>
@@ -254,7 +280,7 @@ export default function Tenders() {
             {/* List Section */}
             <div className={styles.section}>
                 <div className={styles.sectionHeader}>
-                    <h2 className={styles.sectionTitle}>История тендеров ({tenders.length})</h2>
+                    <h2 className={styles.sectionTitle}>История тендеров ({tenders.length}) {loading && <span style={{ fontSize: '0.9rem', color: '#6b7280', fontWeight: 'normal' }}>(Обновление...)</span>}</h2>
                 </div>
 
                 <div className={styles.tableContainer}>
@@ -291,7 +317,7 @@ export default function Tenders() {
                                     </td>
                                     <td>
                                         <div style={{ color: '#6b7280' }}>
-                                            {t.carrierPrice ? parseInt(t.carrierPrice).toLocaleString() + ' ₸' : '—'}
+                                            {t.carrier_price ? parseInt(t.carrier_price).toLocaleString() + ' ₸' : (t.carrierPrice ? parseInt(t.carrierPrice).toLocaleString() + ' ₸' : '—')}
                                         </div>
                                     </td>
                                     <td>
@@ -304,10 +330,10 @@ export default function Tenders() {
                                     </td>
                                 </tr>
                             ))}
-                            {currentTenders.length === 0 && (
+                            {currentTenders.length === 0 && !loading && (
                                 <tr>
                                     <td colSpan="6" style={{ textAlign: 'center', padding: '3rem', color: '#9ca3af' }}>
-                                        Нет записей. Добавьте вручную или загрузите Excel.
+                                        Нет записей в облаке.
                                     </td>
                                 </tr>
                             )}
