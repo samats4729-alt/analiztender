@@ -1,13 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import styles from '../app/tenders/tenders.module.css';
-import { getTenders, addTender, deleteTender, clearTenders } from '../lib/tenderService';
+import { getTenders, addTender, deleteTender, updateTender } from '../lib/tenderService';
 
 export default function Tenders() {
     const [tenders, setTenders] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [editingId, setEditingId] = useState(null);
+    const formRef = useRef(null);
 
     // Form State
     const [form, setForm] = useState({
@@ -48,27 +50,64 @@ export default function Tenders() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Optimistic UI update or wait? Let's wait for simplicity and correctness first.
-        const newTenderPayload = {
-            ...form,
-            // ID will be assigned by DB
-        };
+        const tenderPayload = { ...form };
 
-        const savedTender = await addTender(newTenderPayload);
-
-        if (savedTender) {
-            // Add to top of list
-            setTenders([savedTender, ...tenders]);
-
-            // Reset Form (keep date same)
-            setForm(prev => ({
-                ...prev,
-                origin: '', destination: '', weight: '', price: '',
-                carrierPrice: '', pallets: '', cubes: '', places: '', comment: ''
-            }));
+        if (editingId) {
+            // Update existing
+            const updated = await updateTender(editingId, tenderPayload);
+            if (updated) {
+                setTenders(tenders.map(t => t.id === editingId ? updated : t));
+                setEditingId(null);
+                resetForm();
+            } else {
+                alert('Ошибка при обновлении.');
+            }
         } else {
-            alert('Ошибка при сохранении. Проверьте консоль.');
+            // Add new
+            const savedTender = await addTender(tenderPayload);
+            if (savedTender) {
+                setTenders([savedTender, ...tenders]);
+                resetForm();
+            } else {
+                alert('Ошибка при сохранении.');
+            }
         }
+    };
+
+    const resetForm = () => {
+        setForm(prev => ({
+            ...prev,
+            origin: '', destination: '', weight: '', price: '',
+            carrierPrice: '', pallets: '', cubes: '', places: '', comment: '',
+            status: 'Lost', date: new Date().toISOString().split('T')[0]
+        }));
+    };
+
+
+    const handleEdit = (tender) => {
+        setEditingId(tender.id);
+        setForm({
+            name: tender.name || '',
+            origin: tender.origin || '',
+            destination: tender.destination || '',
+            weight: tender.weight || '',
+            price: tender.price || '',
+            date: tender.date || new Date().toISOString().split('T')[0],
+            status: tender.status || 'Lost',
+            carrierPrice: tender.carrier_price || tender.carrierPrice || '',
+            pallets: tender.pallets || '',
+            cubes: tender.cubes || '',
+            places: tender.places || '',
+            comment: tender.comment || ''
+        });
+        if (formRef.current) {
+            formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    };
+
+    const cancelEdit = () => {
+        setEditingId(null);
+        resetForm();
     };
 
     const handleDelete = async (id) => {
@@ -82,14 +121,7 @@ export default function Tenders() {
         }
     };
 
-    const handleClearAll = async () => {
-        if (confirm('ВНИМАНИЕ: Это удалит ВСЕ записи из ОБЩЕЙ базы данных.\nЭто действие нельзя отменить.\nВы уверены?')) {
-            const success = await clearTenders();
-            if (success) {
-                setTenders([]);
-            }
-        }
-    };
+
 
     // Excel Import Logic
     const handleFileUpload = (e) => {
@@ -197,14 +229,23 @@ export default function Tenders() {
     return (
         <div className={styles.container}>
             {/* Action Bar */}
-            <div className={styles.section}>
+            <div className={styles.section} ref={formRef} style={{
+                transition: 'all 0.3s ease',
+                border: editingId ? '2px solid #4f46e5' : '2px solid transparent',
+                boxShadow: editingId ? '0 0 0 4px rgba(79, 70, 229, 0.1)' : 'var(--shadow-card)'
+            }}>
                 <div className={styles.sectionHeader}>
-                    <h2 className={styles.sectionTitle}>Новая запись</h2>
-                    {tenders.length > 0 && (
-                        <button onClick={handleClearAll} className={styles.clearBtn} style={{ background: '#fee2e2', color: '#dc2626' }}>
-                            Очистить базу 🗑️
-                        </button>
-                    )}
+                    <h2 className={styles.sectionTitle}>
+                        {editingId ? 'Редактирование записи' : 'Новая запись'}
+                        {editingId && (
+                            <button onClick={cancelEdit} style={{
+                                marginLeft: '1rem', padding: '4px 12px', fontSize: '0.8rem',
+                                background: '#f3f4f6', border: 'none', borderRadius: '4px', cursor: 'pointer'
+                            }}>
+                                Отмена ✕
+                            </button>
+                        )}
+                    </h2>
                 </div>
 
                 <div className={styles.sectionContent}>
@@ -262,7 +303,7 @@ export default function Tenders() {
                         </div>
 
                         <button type="submit" className={styles.submitBtn} disabled={loading}>
-                            {loading ? 'Сохранение...' : 'Добавить запись в базу'}
+                            {loading ? 'Ждите...' : (editingId ? 'Сохранить изменения' : 'Добавить запись в базу')}
                         </button>
                     </form>
 
@@ -326,6 +367,7 @@ export default function Tenders() {
                                         </span>
                                     </td>
                                     <td>
+                                        <button onClick={() => handleEdit(t)} className={styles.deleteBtn} style={{ marginRight: '8px', color: '#4f46e5' }} title="Редактировать">✏️</button>
                                         <button onClick={() => handleDelete(t.id)} className={styles.deleteBtn} title="Удалить">×</button>
                                     </td>
                                 </tr>

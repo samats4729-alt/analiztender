@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import styles from './tenders.module.css';
 import Link from 'next/link';
-import { getTenders, saveTender, deleteTender } from '@/lib/tenderService';
+import { getTenders, addTender, deleteTender } from '@/lib/tenderService';
 
 export default function TendersPage() {
     const [tenders, setTenders] = useState([]);
@@ -17,25 +17,31 @@ export default function TendersPage() {
     });
 
     useEffect(() => {
-        setTenders(getTenders());
+        const load = async () => {
+            const data = await getTenders();
+            setTenders(data || []);
+        };
+        load();
     }, []);
 
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (!form.name || !form.price) return;
 
-        saveTender(form);
-        setTenders(getTenders());
+        await addTender(form);
+        const data = await getTenders();
+        setTenders(data || []);
         setForm({ name: '', route: '', price: '', date: '', status: 'Lost', winningPrice: '' });
     };
 
-    const handleDelete = (id) => {
-        deleteTender(id);
-        setTenders(getTenders());
+    const handleDelete = async (id) => {
+        await deleteTender(id);
+        const data = await getTenders();
+        setTenders(data || []);
     }
 
     return (
